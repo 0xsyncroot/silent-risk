@@ -203,147 +203,199 @@ graph LR
 
 ---
 
----
-
-## 🔄 **Complete User Flow - Detailed Process**
+### **Phase 1: Risk Analysis Request Flow**
 
 ```mermaid
-sequenceDiagram
-    autonumber
-    participant User as 👤 User<br/>(Wallet A)
-    participant UI as 🖥️ Frontend
-    participant BE as ⚙️ Backend API
-    participant Kafka as 📬 Kafka
-    participant Worker as 🔧 Worker
-    participant RPC as 🔗 Ethereum RPC
-    participant Redis as 💾 Redis
-    participant Vault as 🏦 RiskScoreVault
-    participant Anon as 🎭 Anonymous<br/>(Wallet B)
-    participant NFT as 🎫 PassportNFT
-    participant DAO as 🏛️ DAO
-
-    rect rgb(240, 240, 255)
-        Note over User,Redis: Phase 1: Risk Analysis Request
-        User->>UI: Login with Privy (X/Farcaster)
-        UI->>User: Embedded wallet created
-        User->>UI: Click "Analyze Wallet A"
-        UI->>User: Request signature (EIP-191)
-        User->>UI: Sign message
-        Note right of UI: Message:<br/>"Silent Risk Analysis:<br/>0xABCD... at timestamp"
-        UI->>BE: POST /risk/analyze<br/>{wallet, signature}
-        BE->>BE: Verify signature (ecrecover)
-        BE->>Redis: Check cache by wallet
-        alt Cached (< 30 min)
-            Redis-->>BE: Return cached result
-            BE-->>UI: Return analysis (instant)
-        else Not Cached
-            BE->>Kafka: Publish task<br/>(wallet, task_id)
-            BE-->>UI: 202 Accepted<br/>{task_id, status: pending}
-            UI->>BE: Poll GET /risk/status/:task_id<br/>(every 3s)
-        end
-    end
-
-    rect rgb(255, 245, 240)
-        Note over Kafka,Vault: Phase 2: Worker Processing
-        Kafka->>Worker: Consume task
-        Worker->>Redis: Update status: processing (10%)
-        Worker->>Worker: Wallet in MEMORY ONLY
-        Worker->>RPC: eth_getBalance(wallet)
-        Worker->>RPC: eth_getTransactionCount(wallet)
-        Worker->>RPC: eth_getLogs (ERC20/721 transfers)
-        Worker->>RPC: Binary search first TX
-        RPC-->>Worker: On-chain data
-        Worker->>Redis: Update progress (40%)
-        Worker->>Worker: Calculate risk score<br/>(age, volume, diversity...)
-        Worker->>Worker: Score = 2500 (LOW)
-        Worker->>Redis: Update progress (60%)
-        Worker->>Worker: Encrypt score (FHE)
-        Worker->>Worker: Generate commitment<br/>= hash(wallet, encrypted, secret)
-        Worker->>Redis: Update progress (80%)
-        Worker->>Vault: submitRiskAnalysis()<br/>(commitment, encrypted_score)
-        Vault-->>Worker: TX confirmed
-        Worker->>Redis: Cache passport data<br/>{commitment, secret, nullifier}
-        Worker->>Redis: Cache analysis result
-        Worker->>Kafka: Publish result
-        Worker->>Redis: Update status: completed (100%)
-        Worker->>Worker: 🗑️ Clear wallet from memory
-    end
-
-    rect rgb(240, 255, 240)
-        Note over UI,NFT: Phase 3: Passport Claiming
-        UI->>BE: GET /risk/status/:task_id
-        BE->>Redis: Retrieve result
-        Redis-->>BE: {status: completed, result}
-        BE-->>UI: Return analysis + passport status
-        UI->>UI: Display risk score & factors
-        User->>UI: Click "Claim Passport"
-        UI->>BE: GET /passport/claim-data/:wallet
-        BE->>Redis: Retrieve passport data
-        Redis-->>BE: {commitment, secret, nullifier}
-        BE-->>UI: Return claim data
-        UI->>UI: Load ZK circuit<br/>(passport_proof.wasm)
-        Note right of UI: Private inputs:<br/>- wallet, secret<br/>Public inputs:<br/>- commitment, nullifier
-        UI->>UI: Generate ZK proof<br/>(~30-60s in browser)
-        UI-->>User: Proof generated!
-        User->>Anon: Switch to Wallet B<br/>(fresh anonymous wallet)
-        Anon->>NFT: mintPassport()<br/>(proof, commitment, nullifier)
-        NFT->>NFT: Verify ZK proof (Groth16)
-        NFT->>Vault: Check commitment exists
-        Vault-->>NFT: Commitment valid
-        NFT->>NFT: Check nullifier not used
-        NFT->>NFT: Store nullifier hash
-        NFT-->>Anon: Passport NFT minted! 🎉<br/>Token ID: #123
-    end
-
-    rect rgb(255, 250, 240)
-        Note over DAO,Vault: Phase 4: DAO Verification (Privacy Preserved)
-        DAO->>NFT: getPassportRiskBand(tokenId: 123)
-        NFT->>Vault: Query commitment data
-        Vault-->>NFT: Return risk band (LOW)
-        NFT-->>DAO: Risk band = LOW
-        Note right of DAO: DAO knows:<br/>✓ Risk = LOW<br/>✗ Does NOT know original wallet<br/>✗ Does NOT know exact score
-        DAO->>DAO: Grant access based on risk ✅
-    end
+graph TD
+    User["👤 User"]
+    UI["🖥️ Frontend"]
+    API["⚙️ Backend API"]
+    Redis["💾 Redis Cache"]
+    Kafka["📬 Kafka"]
+    
+    User -->|"1. Click Analyze"| UI
+    UI -->|"2. Request Signature"| User
+    User -->|"3. Sign (EIP-191)"| UI
+    UI -->|"4. POST /risk/analyze<br/>{wallet, signature}"| API
+    
+    API -->|"5. Verify Signature"| API
+    API -->|"6. Check Cache"| Redis
+    
+    Redis -->|"Cache Hit?"| Redis
+    Redis -->|"Yes - Return Result"| API
+    API -->|"Fast Response"| UI
+    
+    Redis -->|"No Cache"| API
+    API -->|"7. Publish Task"| Kafka
+    API -->|"8. 202 Accepted"| UI
+    UI -->|"9. Poll Status"| API
+    
+    style User fill:#e3f2fd,stroke:#1976d2,stroke-width:2px
+    style UI fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
+    style API fill:#e8f5e9,stroke:#388e3c,stroke-width:2px
+    style Redis fill:#ffebee,stroke:#d32f2f,stroke-width:2px
+    style Kafka fill:#fff9c4,stroke:#f9a825,stroke-width:2px
 ```
 
-### **📊 Data Privacy Flow**
+---
+
+### **Phase 2: Worker Processing Flow**
+
+```mermaid
+graph TD
+    Kafka["📬 Kafka<br/>Consume Task"]
+    Worker["🔧 Worker"]
+    Redis["💾 Redis"]
+    RPC["🔗 Ethereum RPC"]
+    Vault["🏦 RiskScoreVault"]
+    Memory["🧠 Memory Only"]
+    
+    Kafka -->|"1. Get Task"| Worker
+    Worker -->|"2. Wallet→Memory<br/>(Ephemeral)"| Memory
+    
+    Worker -->|"3. Update:10%"| Redis
+    Worker -->|"4. Fetch Data"| RPC
+    RPC -->|"Balance, TX Count<br/>Token Transfers..."| Worker
+    
+    Worker -->|"5. Update:40%"| Redis
+    Worker -->|"6. Calculate Score<br/>(In Memory)"| Memory
+    Memory -->|"Risk=2500(LOW)"| Worker
+    
+    Worker -->|"7. Update:60%"| Redis
+    Worker -->|"8. FHE Encrypt"| Worker
+    Worker -->|"9. Create Commitment<br/>hash(wallet,encrypted,secret)"| Worker
+    
+    Worker -->|"10. Update:80%"| Redis
+    Worker -->|"11. Submit on-chain"| Vault
+    Vault -->|"TX Confirmed"| Worker
+    
+    Worker -->|"12. Cache Data<br/>{commitment, secret}"| Redis
+    Worker -->|"13. Update:100%"| Redis
+    Worker -->|"14. 🗑️ Clear Memory"| Memory
+    
+    style Kafka fill:#fff9c4,stroke:#f9a825,stroke-width:2px
+    style Worker fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
+    style Redis fill:#ffebee,stroke:#d32f2f,stroke-width:2px
+    style RPC fill:#e3f2fd,stroke:#1976d2,stroke-width:2px
+    style Vault fill:#e1f5fe,stroke:#0288d1,stroke-width:3px
+    style Memory fill:#fff3e0,stroke:#f57c00,stroke-width:2px
+```
+
+---
+
+### **Phase 3: Passport Generation & ZK Proof**
+
+```mermaid
+graph TD
+    API["⚙️ Backend API"]
+    Redis["💾 Redis"]
+    UI["🖥️ Frontend"]
+    Browser["🌐 Browser"]
+    ZKCircuit["🔐 ZK Circuit<br/>passport_proof.wasm"]
+    User["👤 User"]
+    Anon["🎭 Anonymous<br/>Wallet B"]
+    
+    API -->|"1. GET /passport/claim-data"| Redis
+    Redis -->|"Return:{commitment,<br/>secret, nullifier}"| API
+    API -->|"2. Send Claim Data"| UI
+    
+    UI -->|"3. Load WASM"| Browser
+    UI -->|"4. Private Inputs:<br/>wallet, secret<br/>Public: commitment"| ZKCircuit
+    Browser -->|"5. Generate Proof<br/>(30-60s)"| ZKCircuit
+    ZKCircuit -->|"Proof Generated"| Browser
+    
+    UI -->|"6. Display:<br/>✅ Ready to Mint"| User
+    User -->|"7. Switch to<br/>Wallet B"| Anon
+    
+    style API fill:#e8f5e9,stroke:#388e3c,stroke-width:2px
+    style Redis fill:#ffebee,stroke:#d32f2f,stroke-width:2px
+    style UI fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
+    style Browser fill:#e3f2fd,stroke:#1976d2,stroke-width:2px
+    style ZKCircuit fill:#fff9c4,stroke:#f9a825,stroke-width:2px
+    style User fill:#e3f2fd,stroke:#1976d2,stroke-width:2px
+    style Anon fill:#f1f8e9,stroke:#689f38,stroke-width:2px
+```
+
+---
+
+### **Phase 4: Passport NFT Minting & Verification**
+
+```mermaid
+graph TD
+    Anon["🎭 Anonymous<br/>Wallet B"]
+    NFT["🎫 PassportNFT"]
+    Verifier["🔐 Groth16Verifier"]
+    Vault["🏦 RiskScoreVault"]
+    DAO["🏛️ DAO/Protocol"]
+    
+    Anon -->|"1. mintPassport()<br/>(proof, commitment, nullifier)"| NFT
+    
+    NFT -->|"2. Verify ZK Proof"| Verifier
+    Verifier -->|"✅ Valid"| NFT
+    
+    NFT -->|"3. Check Commitment<br/>Exists"| Vault
+    Vault -->|"✅ Confirmed"| NFT
+    
+    NFT -->|"4. Check Nullifier<br/>Not Used"| NFT
+    NFT -->|"5. Store Nullifier"| NFT
+    
+    NFT -->|"6. 🎉 Mint NFT<br/>Token #123"| Anon
+    
+    DAO -->|"7. Query<br/>getPassportRiskBand(123)"| NFT
+    NFT -->|"8. Check Vault<br/>for Risk Band"| Vault
+    Vault -->|"Risk=LOW"| NFT
+    NFT -->|"9. Return: LOW"| DAO
+    
+    DAO -->|"10. Grant Access<br/>✅ Low Risk"| DAO
+    
+    style Anon fill:#f1f8e9,stroke:#689f38,stroke-width:2px
+    style NFT fill:#f1f8e9,stroke:#689f38,stroke-width:3px
+    style Verifier fill:#fff9c4,stroke:#f9a825,stroke-width:2px
+    style Vault fill:#e1f5fe,stroke:#0288d1,stroke-width:3px
+    style DAO fill:#fff3e0,stroke:#f57c00,stroke-width:2px
+```
+
+---
+
+### **Data Flow: Privacy Protection**
 
 ```mermaid
 graph LR
-    subgraph Private["🔒 PRIVATE DATA (Never on-chain)"]
-        WalletA["Wallet A Address<br/>(original analyzed wallet)"]
-        Secret["Secret<br/>(random 32 bytes)"]
-        PlainScore["Plaintext Score<br/>(2500)"]
+    subgraph Original["❌ EXPOSED (Never)"]
+        WalletA["Wallet A<br/>0xABCD..."]
+        Secret["Secret<br/>32 bytes"]
+        Score["Score<br/>2500"]
     end
     
-    subgraph Computation["⚙️ COMPUTATION (Off-chain/Memory)"]
-        Hash["Commitment = hash(wallet, encrypted, secret)"]
-        Encrypt["Encrypted Score (FHE)"]
-        ZKProof["ZK Proof = prove(know secret)"]
+    subgraph Computation["⚙️ COMPUTED (Off-chain)"]
+        Hash["Commitment<br/>hash(wallet,enc,secret)"]
+        FHE["FHE Encrypt<br/>encryptedScore"]
+        ZK["ZK Proof<br/>prove(secret)"]
     end
     
-    subgraph Public["🌐 PUBLIC DATA (On-chain)"]
-        Commitment["Commitment Hash<br/>(non-reversible)"]
-        EncryptedOnChain["Encrypted Score<br/>(threshold queries only)"]
-        Nullifier["Nullifier<br/>(prevent double-mint)"]
-        RiskBand["Risk Band<br/>(LOW/MEDIUM/HIGH)"]
+    subgraph OnChain["✅ PUBLIC (On-chain)"]
+        CommitHash["Commitment Hash<br/>(0x1a2b3c...)"]
+        EncScore["Encrypted Score<br/>(0x...fhe...)"]
+        Nullifier["Nullifier<br/>(0x...null...)"]
+        RiskBand["Risk Band<br/>LOW/MED/HIGH"]
     end
     
     WalletA --> Hash
     Secret --> Hash
-    PlainScore --> Encrypt
-    Encrypt --> Hash
-    Hash --> Commitment
-    Encrypt --> EncryptedOnChain
-    Secret --> ZKProof
-    ZKProof --> Nullifier
-    EncryptedOnChain --> RiskBand
+    Score --> FHE
+    Secret --> ZK
+    FHE --> Hash
+    Hash --> CommitHash
+    FHE --> EncScore
+    ZK --> Nullifier
+    EncScore --> RiskBand
     
-    style WalletA fill:#ffebee,stroke:#d32f2f,stroke-width:2px
-    style Secret fill:#ffebee,stroke:#d32f2f,stroke-width:2px
-    style PlainScore fill:#ffebee,stroke:#d32f2f,stroke-width:2px
-    style Commitment fill:#e8f5e9,stroke:#388e3c,stroke-width:2px
-    style EncryptedOnChain fill:#e8f5e9,stroke:#388e3c,stroke-width:2px
+    style Original fill:#ffebee,stroke:#d32f2f,stroke-width:3px
+    style Computation fill:#fff9c4,stroke:#f9a825,stroke-width:2px
+    style OnChain fill:#e8f5e9,stroke:#388e3c,stroke-width:3px
+    style CommitHash fill:#e8f5e9,stroke:#388e3c,stroke-width:2px
+    style EncScore fill:#e8f5e9,stroke:#388e3c,stroke-width:2px
+    style Nullifier fill:#e8f5e9,stroke:#388e3c,stroke-width:2px
     style RiskBand fill:#e8f5e9,stroke:#388e3c,stroke-width:2px
 ```
 
