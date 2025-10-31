@@ -130,8 +130,9 @@ var
 sdist
 develop-eggs
 .installed.cfg
-lib
+/lib
 lib64
+!ui/src/lib/
 
 # Jupyter Notebook
 .ipynb_checkpoints
