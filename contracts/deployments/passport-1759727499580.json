@@ -1,0 +1,14 @@
+{
+  "network": "sepolia",
+  "chainId": "11155111",
+  "deployer": "0x4D08dfEBE24347E9C7E18f8cfd27D60d07865234",
+  "timestamp": "2025-10-06T05:11:39.580Z",
+  "contracts": {
+    "RiskScoreVault": "0x36690BA963AD0dB9Cf2a6EFd302aDde7dD840fE9",
+    "PassportNFT": "0xd1e6988Fd8d0e2C9E7685E04EEb945B7A6daDa0a"
+  },
+  "configuration": {
+    "passportValidityPeriod": 2592000
+  },
+  "notes": "ZK proof verification is handled by RiskScoreVault (no separate Verifier contract needed)"
+}

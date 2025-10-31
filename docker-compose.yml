@@ -1,0 +1,63 @@
+# ============================================
+# Silent Risk - Docker Compose
+# Development environment for Kafka and Redis
+# ============================================
+
+version: '3.8'
+
+services:
+  # ============ ZOOKEEPER ============
+  # Required by Kafka for cluster coordination
+  
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    container_name: silent-risk-zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "2181:2181"
+    networks:
+      - silent-risk-network
+
+  # ============ KAFKA ============
+  # Message broker for async task processing
+  
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: silent-risk-kafka
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+    networks:
+      - silent-risk-network
+
+  # ============ REDIS ============
+  # Cache for analysis results and task status
+  
+  redis:
+    image: redis:7.2-alpine
+    container_name: silent-risk-redis
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes
+    volumes:
+      - redis-data:/data
+    networks:
+      - silent-risk-network
+
+networks:
+  silent-risk-network:
+    driver: bridge
+
+volumes:
+  redis-data:

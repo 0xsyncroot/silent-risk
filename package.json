@@ -1,0 +1,56 @@
+{
+  "name": "silent-risk",
+  "version": "1.0.0",
+  "description": "Confidential AI DApp using Zama fhEVM and Concrete-ML",
+  "private": true,
+  "workspaces": [
+    "ui",
+    "contracts"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev:ui\" \"npm run dev:backend\" \"npm run dev:worker\"",
+    "dev:ui": "cd ui && npm run dev",
+    "dev:backend": "cd backend && python -m uvicorn main:app --reload --host 0.0.0.0 --port 8000",
+    "dev:worker": "cd worker && python -m celery worker -A tasks.celery --loglevel=info",
+    "build": "npm run build:ui && npm run build:contracts",
+    "build:ui": "cd ui && npm run build",
+    "build:contracts": "cd contracts && npx hardhat compile",
+    "test": "npm run test:contracts && npm run test:backend && npm run test:worker",
+    "test:contracts": "cd contracts && npx hardhat test",
+    "test:backend": "cd backend && python -m pytest",
+    "test:worker": "cd worker && python -m pytest",
+    "deploy:contracts": "cd contracts && npx hardhat deploy",
+    "lint": "npm run lint:ui && npm run lint:contracts",
+    "lint:ui": "cd ui && npm run lint",
+    "lint:contracts": "cd contracts && npx hardhat check",
+    "format": "npm run format:ui && npm run format:backend && npm run format:worker",
+    "format:ui": "cd ui && npm run format",
+    "format:backend": "cd backend && black . && isort .",
+    "format:worker": "cd worker && black . && isort .",
+    "clean": "rm -rf node_modules ui/node_modules contracts/node_modules ui/.next contracts/artifacts contracts/cache",
+    "setup": "npm install && cd ui && npm install && cd ../contracts && npm install",
+    "docker:up": "docker-compose up -d",
+    "docker:down": "docker-compose down",
+    "docker:logs": "docker-compose logs -f"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  },
+  "keywords": [
+    "fhEVM",
+    "Zama",
+    "Concrete-ML",
+    "Web3",
+    "AI",
+    "Privacy",
+    "Encryption",
+    "DApp"
+  ],
+  "author": "Silent Risk Team",
+  "license": "MIT"
+}
+

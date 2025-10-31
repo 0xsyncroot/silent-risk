@@ -1,0 +1,42 @@
+# ============================================
+# WebSocket Service - Docker Compose
+# ============================================
+
+version: '3.8'
+
+services:
+  websocket:
+    build: .
+    container_name: silent-risk-websocket
+    ports:
+      - "8001:8001"
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - REDIS_PUBSUB_CHANNEL=task_status_updates
+      - PORT=8001
+      - LOG_LEVEL=INFO
+    depends_on:
+      - redis
+    networks:
+      - silent-risk-network
+    restart: unless-stopped
+
+  redis:
+    image: redis:7.2-alpine
+    container_name: silent-risk-redis-ws
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes
+    volumes:
+      - redis-data:/data
+    networks:
+      - silent-risk-network
+    restart: unless-stopped
+
+networks:
+  silent-risk-network:
+    driver: bridge
+
+volumes:
+  redis-data:
+

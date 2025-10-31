@@ -1,0 +1,14 @@
+{
+  "network": "sepolia",
+  "chainId": "11155111",
+  "deployer": "0x4D08dfEBE24347E9C7E18f8cfd27D60d07865234",
+  "timestamp": "2025-10-03T03:43:51.724Z",
+  "contracts": {
+    "RiskScoreVault": "0x5b5df552dd023540195116176D22309A3d2D1c58",
+    "Verifier": "0xda9f85A2Db6C67AbF8c4Abc5206B7e394Cd6a00f",
+    "PassportNFT": "0xf43C8332b9a05B0FE7BF2001A2f5970C16FD8aB7"
+  },
+  "configuration": {
+    "passportValidityPeriod": 2592000
+  }
+}
