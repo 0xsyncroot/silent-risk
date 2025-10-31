@@ -18,7 +18,7 @@
 import { useEffect, useCallback } from 'react';
 import { Shield, Lock, Brain, FileCheck, BarChart3 } from 'lucide-react';
 import { useAnalyticsStore, analyticsSelectors } from '@/store';
-import { AnalyticsService } from '@/lib/api/services';
+import { AnalyticsService } from '@/lib/api';
 
 export function DashboardOverview() {
   // State from Zustand store

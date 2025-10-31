@@ -13,7 +13,7 @@
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 import { immer } from 'zustand/middleware/immer';
-import type { PassportClaimData, PassportMintStatus } from '@/lib/api/services';
+import type { PassportClaimData, PassportMintStatus } from '@/lib/api';
 
 // ============ TYPE DEFINITIONS ============
 

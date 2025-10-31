@@ -17,8 +17,8 @@
 
 import { useEffect, useCallback } from 'react';
 import { Brain, Zap, Lock, TrendingUp, Activity } from 'lucide-react';
-import { AnalyticsService } from '@/lib/api/services';
-import type { MLPerformanceData } from '@/lib/api/services/analytics.service';
+import { AnalyticsService } from '@/lib/api';
+import type { MLPerformanceData } from '@/lib/api';
 import { useState } from 'react';
 
 interface MLStatsDisplay extends MLPerformanceData {

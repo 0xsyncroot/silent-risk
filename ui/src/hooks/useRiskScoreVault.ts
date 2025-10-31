@@ -9,7 +9,7 @@ import { useState, useCallback } from 'react';
 import { useWalletClient, usePublicClient } from 'wagmi';
 import { parseAbi, type Address } from 'viem';
 import { initializeFHEVM } from '@/lib/fhevm';
-import { getStoredCommitment } from '@/lib/privacy/commitment';
+import { getStoredCommitment } from '@/lib/privacy';
 
 /**
  * RiskScoreVault ABI

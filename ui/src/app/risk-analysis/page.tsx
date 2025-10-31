@@ -8,7 +8,7 @@ import {
 import Link from 'next/link';
 import { useWebSocket } from '@/hooks/useWebSocket';
 import { useWalletSignature } from '@/hooks/useWalletSignature';
-import { ensureCommitment } from '@/lib/privacy/commitment';
+import { ensureCommitment } from '@/lib/privacy';
 import { PassportSubmit } from '@/components/PassportSubmit';
 import { ShimmerCard, ShimmerList, ShimmerPassport } from '@/components/ui/shimmer';
 import { useNotifications } from '@/contexts/NotificationContext';

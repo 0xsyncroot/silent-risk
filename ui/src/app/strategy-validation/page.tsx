@@ -5,7 +5,7 @@ import { usePrivy } from '@privy-io/react-auth';
 import { Settings, CheckCircle, AlertTriangle, XCircle, ArrowLeft, TrendingUp, Sparkles, Target } from 'lucide-react';
 import Link from 'next/link';
 import { useWalletSignature } from '@/hooks/useWalletSignature';
-import { ensureCommitment } from '@/lib/privacy/commitment';
+import { ensureCommitment } from '@/lib/privacy';
 
 interface ValidationCheck {
   name: string;

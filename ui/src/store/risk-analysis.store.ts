@@ -13,7 +13,7 @@
 import { create } from 'zustand';
 import { devtools, persist } from 'zustand/middleware';
 import { immer } from 'zustand/middleware/immer';
-import type { RiskAnalysisResult, TaskStatusResponse } from '@/lib/api/services';
+import type { RiskAnalysisResult, TaskStatusResponse } from '@/lib/api';
 
 // ============ TYPE DEFINITIONS ============
 
